@@ -92,6 +92,11 @@
   const catEl = document.createElement('div');
   catEl.className = 'cat';
   catEl.setAttribute('aria-hidden', 'true');
+  const catImg = document.createElement('img');
+  catImg.className = 'cat__img';
+  catImg.src = '/assets/cat.webp';
+  catImg.alt = 'cat';
+  catEl.appendChild(catImg);
 
   const flagRadiusEl = document.createElement('div');
   flagRadiusEl.className = 'flagRadius';
@@ -394,6 +399,13 @@
           catPos.y += vy * catMoveSpeedPxPerSec * dt;
           clampCat();
           updateCatTileFromPosition();
+
+          // Flip cat facing depending on horizontal direction
+          if (vx > 0) {
+            catEl.classList.add('cat--right');
+          } else if (vx < 0) {
+            catEl.classList.remove('cat--right'); // default faces left
+          }
         }
       }
 
@@ -421,34 +433,39 @@
       'n8'
     );
 
-    tileEl.textContent = '';
+    const numEl = tileEl.querySelector('.tile__num');
+    if (numEl) numEl.textContent = '';
 
     if (gameOver && showMines) {
       if (tile.isBomb) {
         tileEl.classList.add('tile--mine');
-        tileEl.textContent = '*';
+        if (numEl) numEl.textContent = '*';
         return;
       }
     }
 
     if (tile.isFlagged && !tile.isRevealed) {
       tileEl.classList.add('tile--flagged');
-      tileEl.textContent = '🚩';
+      if (numEl) numEl.textContent = '🚩';
       return;
     }
 
     if (tile.isRevealed) {
       tileEl.classList.add('tile--revealed');
       if (!tile.isBomb && tile.adjacentBombs > 0) {
-        tileEl.textContent = String(tile.adjacentBombs);
+        if (numEl) numEl.textContent = String(tile.adjacentBombs);
         tileEl.classList.add(computeNumberClass(tile.adjacentBombs));
       } else {
         // empty zeros intentionally render blank
-        tileEl.textContent = '';
+        if (numEl) numEl.textContent = '';
       }
       return;
     }
 
+    // Flag cursor highlight (only when in flag mode)
+    if (flagMode && !tile.isRevealed && tile.row === flagCursor.row && tile.col === flagCursor.col && isWithinBounds(tile.row, tile.col)) {
+      tileEl.classList.add('tile--flagTarget');
+    }
   }
 
   function renderBoard() {
@@ -742,6 +759,14 @@
         tileEl.dataset.row = String(r);
         tileEl.dataset.col = String(c);
 
+        const imgDiv = document.createElement('div');
+        imgDiv.className = 'tile__img';
+        tileEl.appendChild(imgDiv);
+
+        const numSpan = document.createElement('span');
+        numSpan.className = 'tile__num';
+        tileEl.appendChild(numSpan);
+
         tileEls[r][c] = tileEl;
         boardEl.appendChild(tileEl);
       }
@@ -782,26 +807,43 @@
         return;
       }
 
-      if (key === 'f' || key === 'F') {
+      if (key === 'e' || key === 'E') {
         e.preventDefault();
         if (awaitingStart) {
           setModeHint();
           return;
         }
         if (!gameOver) {
-          flagMode = !flagMode;
-          moveKeys.left = false;
-          moveKeys.right = false;
-          moveKeys.up = false;
-          moveKeys.down = false;
+          if (!flagMode) {
+            // Enter flag mode
+            flagMode = true;
+            moveKeys.left = moveKeys.right = moveKeys.up = moveKeys.down = false;
+            flagCursor = { row: cursor.row, col: cursor.col };
+            setModeHint();
+            renderBoard();
+            updateFlagTargetVisual();
+          } else {
+            // Confirm placement, then exit
+            toggleFlagHere();
+            flagMode = false;
+            setModeHint();
+            renderBoard();
+            updateFlagTargetVisual();
+          }
+        }
+        return;
+      }
 
-          // When entering flag mode, start targeting the current tile the cat is nearest to.
-          if (flagMode) flagCursor = { row: cursor.row, col: cursor.col };
+      if (key === 'q' || key === 'Q') {
+        if (flagMode) {
+          e.preventDefault();
+          // Cancel flag mode without placing
+          flagMode = false;
           setModeHint();
           renderBoard();
           updateFlagTargetVisual();
+          return;
         }
-        return;
       }
 
       if (key === 'r' || key === 'R') {
@@ -841,7 +883,12 @@
       if (key === 'Enter' || key === ' ') {
         e.preventDefault();
         if (awaitingStart) return;
-        toggleFlagHere(); // place/remove flag on the targeted tile
+        // Enter confirms too, mirroring E confirm for accessibility
+        toggleFlagHere();
+        flagMode = false;
+        setModeHint();
+        renderBoard();
+        updateFlagTargetVisual();
         return;
       }
 
@@ -865,7 +912,6 @@
       const nr = flagCursor.row + dr;
       const nc = flagCursor.col + dc;
       if (!isWithinBounds(nr, nc)) return;
-      if (tiles[nr][nc].isRevealed) return;
 
       flagCursor = { row: nr, col: nc };
       renderBoard();
@@ -951,9 +997,21 @@
       }
       renderBoard();
     });
+
+    // Start idle squish/bob animation using GSAP if available (start from bottom)
+    if (window.gsap) {
+      const img = catEl.querySelector('.cat__img');
+      if (img) {
+        // Begin slightly lower and squished, then move up and unsquish, yoyo forever
+        window.gsap.set(img, { y: 2, scaleY: 0.88 });
+        const tl = window.gsap.timeline({ repeat: -1, yoyo: true, defaults: { ease: 'sine.inOut', duration: 0.5 } });
+        tl.to(img, { y: -2, scaleY: 1 });
+      }
+    }
   }
 
   initGame();
 })();
+
 
 

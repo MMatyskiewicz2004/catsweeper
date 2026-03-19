@@ -10,9 +10,9 @@
     <%- include('partials/header'); %>
 
     <main class="container game-layout">
-      <section class="game">
-        <div class="game__hud">
-          <div class="hud hud--left">
+      <div class="play">
+        <aside class="hudPanel">
+          <div class="hud">
             <div class="hud__item">
               <div class="hud__label">Bombs</div>
               <div class="hud__value" id="bombCounter">0</div>
@@ -21,31 +21,27 @@
               <div class="hud__label">Flags</div>
               <div class="hud__value" id="flagCounter">0</div>
             </div>
-          </div>
-
-          <div class="hud hud--center">
             <div class="hud__item">
               <div class="hud__label">Time</div>
               <div class="hud__value hud__value--mono" id="timer">00:00</div>
             </div>
           </div>
+          <button class="btn btn--secondary" id="restartBtn" type="button" style="margin-top:10px">Restart</button>
+        </aside>
 
-          <div class="hud hud--right">
-            <button class="btn btn--secondary" id="restartBtn" type="button">Restart</button>
-          </div>
-        </div>
-
-        <div class="game__boardWrap">
-          <div class="game__boardMeta">
-            <div class="muted" id="modeHint">
-              Walk with <span class="kbd">Arrows</span> or <span class="kbd">WASD</span> and choose your starting tile. Press <span class="kbd">Enter</span> when you are where you want to begin.
-              After the board spawns, press <span class="kbd">F</span> for Flag Mode to place/remove flags anywhere using <span class="kbd">Arrows</span> + <span class="kbd">Enter</span>.
+        <section class="game">
+          <div class="game__boardWrap">
+            <div class="game__boardMeta">
+              <div class="muted" id="modeHint">
+                Walk with <span class="kbd">Arrows</span> or <span class="kbd">WASD</span> and choose your starting tile. Press <span class="kbd">Enter</span> when you are where you want to begin.
+                After the board spawns, press <span class="kbd">F</span> for Flag Mode to place/remove flags anywhere using <span class="kbd">Arrows</span> + <span class="kbd">Enter</span>.
+              </div>
             </div>
-          </div>
 
-          <div id="board" class="board" aria-label="Minesweeper board"></div>
-        </div>
-      </section>
+            <div id="board" class="board" aria-label="Minesweeper board"></div>
+          </div>
+        </section>
+      </div>
 
       <aside class="side">
         <div class="card">
@@ -77,6 +73,7 @@
       window.__PLAYER_NAME__ = <%- JSON.stringify(playerName) %>;
       window.__GAME_META__ = <%- JSON.stringify(gameMeta) %>;
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
     <script src="/js/gameClient.js" defer></script>
 
     <!-- Overlays -->

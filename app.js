@@ -18,6 +18,8 @@ function createApp() {
   app.use(express.urlencoded({ extended: true }));
 
   app.use(express.static(path.join(__dirname, 'public')));
+  // Serve game assets (cat, landmine, etc.) under /assets
+  app.use('/assets', express.static(path.join(__dirname, 'game_assets')));
 
   app.use('/', homeRoutes);
   app.use('/', gameRoutes);

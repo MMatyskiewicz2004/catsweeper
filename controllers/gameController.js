@@ -18,9 +18,9 @@ async function startGame(req, res, next) {
       title: 'Minesweeper',
       playerName,
       gameMeta: {
-        rows: 6,
-        cols: 10,
-        mines: 15
+        rows: 5,
+        cols: 5,
+        mines: 8
       },
       fastestWins
     });

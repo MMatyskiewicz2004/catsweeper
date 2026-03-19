@@ -18,12 +18,13 @@
 
   /* Board sizing: tuned so the board still fits on screen, but tiles have more spacing. */
   --tileSize: clamp(20px, 4.2vw, 52px);
-  --tileGap: clamp(14px, 2.8vw, 42px);
+  --tileGap: clamp(30px, 5vw, 84px); /* even wider spacing between landmines */
   --boardPad: clamp(12px, 2.3vw, 18px);
 
-  --n1: #111827;
-  --n2: #374151;
-  --n3: #4b5563;
+  /* Neon numbers */
+  --n1: #00e5ff;
+  --n2: #39ff14;
+  --n3: #ff1744;
   --n4: #6b7280;
   --n5: #4b5563;
   --n6: #374151;
@@ -32,6 +33,9 @@
 
   --radius: 16px;
 }
+
+/* Jersey 15 font for numbers */
+@import url('https://fonts.googleapis.com/css2?family=Jersey+15&display=swap');
 
 * {
   box-sizing: border-box;
@@ -300,7 +304,7 @@ body {
 
 .game-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr;
   gap: 18px;
   align-items: start;
 }
@@ -313,10 +317,28 @@ body {
 
 .game__hud {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: center;
   margin-bottom: 12px;
+}
+
+.play {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.hudPanel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  position: sticky;
+  top: 72px;
+  height: fit-content;
 }
 
 .hud {
@@ -368,19 +390,19 @@ body {
 .board {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(10, var(--tileSize));
-  grid-template-rows: repeat(6, var(--tileSize));
+  grid-template-columns: repeat(5, var(--tileSize));
+  grid-template-rows: repeat(5, var(--tileSize));
   gap: var(--tileGap);
   user-select: none;
   padding: var(--boardPad);
-  width: calc(10 * var(--tileSize) + 9 * var(--tileGap) + 2 * var(--boardPad));
+  width: calc(5 * var(--tileSize) + 4 * var(--tileGap) + 2 * var(--boardPad));
   margin: 0 auto;
 }
 
 .tile {
   width: 100%;
   height: 100%;
-  border-radius: 10px;
+  border-radius: 9999px; /* round landmine cells */
   border: 1px solid var(--tile-border);
   background: var(--tile);
   display: grid;
@@ -388,6 +410,7 @@ body {
   font-weight: 900;
   color: rgba(255, 255, 255, 0.0);
   transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
+  position: relative;
 }
 
 .tile--hidden:hover {
@@ -398,6 +421,22 @@ body {
   background: var(--tile-revealed);
   border-color: rgba(17, 24, 39, 0.12);
   color: var(--text);
+}
+
+.tile__img {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/landmine.webp');
+  background-size: cover;
+  background-position: center;
+  border-radius: 9999px; /* round image mask */
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.tile--revealed .tile__img {
+  opacity: 0.2;
 }
 
 .tile--flagged {
@@ -414,7 +453,16 @@ body {
 
 .tile__num {
   font-size: 18px;
+  font-family: 'Jersey 15', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  color: var(--text);
+  z-index: 2;
+  pointer-events: none;
 }
+
+/* Neon number colors */
+.n1 .tile__num { color: var(--n1); }
+.n2 .tile__num { color: var(--n2); }
+.n3 .tile__num { color: var(--n3); }
 
 .tile--mine {
   background: rgba(239, 68, 68, 0.14);
@@ -574,16 +622,30 @@ body {
 
 .cat {
   position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 1);
-  border: 2px solid rgba(217, 119, 6, 0.95);
-  box-shadow: 0 10px 30px rgba(217, 119, 6, 0.18);
+  width: 96px;
+  height: 96px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none; /* fully transparent behind the cat */
   transform: translate(-50%, -50%);
-  transition: left 80ms ease, top 80ms ease;
+  transition: left 80ms ease, top 80ms ease, transform 80ms ease;
   pointer-events: none;
   z-index: 3;
+}
+
+.cat--right {
+  transform: translate(-50%, -50%) scaleX(-1);
+}
+
+.cat__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-origin: 50% 70%;
+}
+
+.cat--right .cat__img {
+  transform: scaleX(-1);
 }
 
 .flagRadius {
