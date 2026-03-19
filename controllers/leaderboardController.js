@@ -35,6 +35,41 @@ async function getFastestWins(limit = 10) {
   }
 }
 
+async function getPlayerWins(playerName, limit = 10) {
+  try {
+    const lim = Number(limit) || 10;
+    const { rows } = await pool.query(
+      `
+        SELECT
+          player_name,
+          completion_time_ms,
+          created_at,
+          rows,
+          cols,
+          mines
+        FROM leaderboard_runs
+        WHERE result = 'win' AND player_name = $1
+        ORDER BY completion_time_ms ASC, created_at ASC
+        LIMIT $2
+      `,
+      [normalizePlayerName(playerName), lim]
+    );
+
+    return rows.map((r) => ({
+      playerName: r.player_name,
+      completionTimeMs: r.completion_time_ms,
+      datePlayed: r.created_at,
+      rows: r.rows,
+      cols: r.cols,
+      mines: r.mines
+    }));
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('Player scores query failed (returning empty list):', err.message);
+    return [];
+  }
+}
+
 function formatServerError(err) {
   return err && err.message ? err.message : 'Database error';
 }
@@ -78,6 +113,23 @@ async function submitScore(req, res, next) {
   }
 }
 
+async function getPlayerWinsJson(req, res, next) {
+  try {
+    const { playerName } = req.query || {};
+    const limit = Number(req.query.limit) || 10;
+
+    const v = validatePlayerName(playerName);
+    if (!v.ok) {
+      return res.status(400).json({ error: true, message: 'Invalid player name.' });
+    }
+
+    const wins = await getPlayerWins(v.normalized, limit);
+    return res.json({ ok: true, wins });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getLeaderboardJson(req, res, next) {
   try {
     const limit = Number(req.query.limit) || 20;
@@ -99,7 +151,9 @@ async function leaderboardPage(req, res, next) {
 
 module.exports = {
   getFastestWins,
+  getPlayerWins,
   submitScore,
+  getPlayerWinsJson,
   getLeaderboardJson,
   leaderboardPage
 };

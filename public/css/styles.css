@@ -195,6 +195,53 @@ body {
   font-size: 18px;
 }
 
+.startScreen {
+  max-width: 560px;
+  margin: 28px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.startScreen__titleWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.startScreen__title {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.startScreen__cat {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.startScreen__leaderboardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.startScreen__playForm {
+  width: 100%;
+}
+
+.startScreen__playBtn {
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+}
+
 .muted {
   color: var(--muted);
 }

@@ -5,12 +5,14 @@ const { validatePlayerName, normalizePlayerName } = require('../lib/validation')
 async function startGame(req, res, next) {
   try {
     const { name } = req.query;
-    const v = validatePlayerName(name);
-    if (!v.ok) {
-      return res.redirect('/?error=' + encodeURIComponent('Please enter a valid player name (1-20 characters).'));
+    let playerName = null;
+    if (typeof name === 'string' && name.trim() !== '') {
+      const v = validatePlayerName(name);
+      if (!v.ok) {
+        return res.redirect('/?error=' + encodeURIComponent('Please enter a valid player name (1-20 characters).'));
+      }
+      playerName = normalizePlayerName(name);
     }
-
-    const playerName = normalizePlayerName(name);
 
     const fastestWins = await getFastestWins(10);
 

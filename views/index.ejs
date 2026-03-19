@@ -7,68 +7,39 @@
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
   <body>
-    <%- include('partials/header'); %>
-
     <main class="container">
-      <section class="hero">
-        <div class="hero__copy">
-          <h1 class="hero__title">Move. Reveal. Survive.</h1>
-          <p class="hero__lead">
-            Walk your cursor over tiles to reveal them. Avoid bombs, use flags to mark suspected mines,
-            and win when all non-bomb tiles are revealed.
-          </p>
+      <section class="startScreen" aria-label="Start screen">
+        <div class="startScreen__titleWrap">
+          <h1 class="startScreen__title">Cat Sweeper</h1>
+          <img class="startScreen__cat" src="/assets/cat.webp" alt="Cat Sweeper cat" />
         </div>
 
-        <div class="card card--form">
-          <h2 class="card__title">Start a Run</h2>
-          <% if (error) { %>
-            <div class="alert alert--error" role="alert"><%= error %></div>
-          <% } %>
+        <div class="card startScreen__card">
+          <div class="startScreen__leaderboardHead">
+            <h2 class="card__title">Leaderboard</h2>
+            <a class="link" href="/leaderboard">View all</a>
+          </div>
 
-          <form class="form" action="/game" method="get">
-            <label class="form__label" for="name">Player name</label>
-            <input
-              class="form__input"
-              id="name"
-              name="name"
-              type="text"
-              maxlength="20"
-              placeholder="e.g., Alex"
-              required
-            />
-            <button class="btn btn--primary" type="submit">Start Game</button>
-          </form>
-
-          <div class="help">
-            <div class="help__item"><span class="kbd">Arrows</span> / <span class="kbd">WASD</span> move</div>
-            <div class="help__item"><span class="kbd">F</span> toggle flag</div>
+          <div class="leaderboard leaderboard--start">
+            <% if (!fastestWins || fastestWins.length === 0) { %>
+              <div class="muted">No wins recorded yet.</div>
+            <% } else { %>
+              <% fastestWins.forEach((row, idx) => { %>
+                <div class="leaderboard__row">
+                  <div class="leaderboard__rank">#<%= idx + 1 %></div>
+                  <div class="leaderboard__name"><%= row.playerName %></div>
+                  <div class="leaderboard__time"><%= row.completionTimeMs ? Math.round(row.completionTimeMs / 1000) : '-' %>s</div>
+                </div>
+              <% }) %>
+            <% } %>
           </div>
         </div>
-      </section>
 
-      <section class="section">
-        <div class="section__head">
-          <h2 class="section__title">Fastest Wins</h2>
-          <a class="link" href="/leaderboard">View full leaderboard</a>
-        </div>
-
-        <div class="leaderboard">
-          <% if (!fastestWins || fastestWins.length === 0) { %>
-            <div class="muted">No wins recorded yet. Be the first!</div>
-          <% } else { %>
-            <% fastestWins.forEach((row, idx) => { %>
-              <div class="leaderboard__row">
-                <div class="leaderboard__rank">#<%= idx + 1 %></div>
-                <div class="leaderboard__name"><%= row.playerName %></div>
-                <div class="leaderboard__time"><%= row.completionTimeMs ? Math.round(row.completionTimeMs / 1000) : '-' %>s</div>
-              </div>
-            <% }) %>
-          <% } %>
-        </div>
+        <form class="startScreen__playForm" action="/game" method="get">
+          <button type="submit" class="btn btn--primary startScreen__playBtn">Play</button>
+        </form>
       </section>
     </main>
-
-    <%- include('partials/footer'); %>
   </body>
 </html>
 

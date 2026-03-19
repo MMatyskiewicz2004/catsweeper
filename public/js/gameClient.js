@@ -1,6 +1,15 @@
 (function () {
   const meta = window.__GAME_META__;
-  const playerName = window.__PLAYER_NAME__;
+  const serverPlayerName = window.__PLAYER_NAME__;
+  const LS_PLAYER_NAME_KEY = 'catsweeperPlayerName';
+  const storedPlayerName = (() => {
+    try {
+      return window.localStorage ? window.localStorage.getItem(LS_PLAYER_NAME_KEY) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const playerName = serverPlayerName || storedPlayerName || '';
 
   if (!meta) {
     // eslint-disable-next-line no-console
@@ -109,7 +118,7 @@
         'Choose your starting tile: walk with <span class="kbd">Arrows</span> / <span class="kbd">WASD</span> and press <span class="kbd">Enter</span>. The board spawns after you pick.';
     } else if (flagMode) {
       modeHint.innerHTML =
-        'Flag Mode: move the flag cursor with <span class="kbd">Arrows</span> / <span class="kbd">WASD</span>, then press <span class="kbd">Enter</span> to place/remove the flag. Press <span class="kbd">F</span> again to exit.';
+        'Flag Mode: walk onto tiles to place/remove flags. Press <span class="kbd">F</span> to exit.';
     } else {
       modeHint.innerHTML =
         'Move with <span class="kbd">Arrows</span> or <span class="kbd">WASD</span>. Press <span class="kbd">F</span> for Flag Mode.';
@@ -318,8 +327,9 @@
       return;
     }
 
-    const r = flagCursor.row;
-    const c = flagCursor.col;
+    // In flag mode, target is always the tile the cat is standing on.
+    const r = cursor.row;
+    const c = cursor.col;
     const el = tileEls[r] && tileEls[r][c];
     if (!el) return;
 
@@ -362,6 +372,12 @@
     cursor = { row: best.row, col: best.col };
     if (!awaitingStart) {
       if (!timerStarted) startTimer();
+      if (flagMode) {
+        // In flag mode, walking onto a tile toggles a flag (on/off).
+        flagCursor = { row: cursor.row, col: cursor.col };
+        toggleFlagAt(cursor.row, cursor.col);
+        return;
+      }
       stepOnTile(cursor.row, cursor.col);
     }
     renderBoard();
@@ -383,7 +399,7 @@
       const dt = Math.min(0.05, (ts - lastTs) / 1000);
       lastTs = ts;
 
-      if (!gameOver && !flagMode && tileCentersReady) {
+      if (!gameOver && tileCentersReady) {
         let vx = 0;
         let vy = 0;
         if (moveKeys.left) vx -= 1;
@@ -538,12 +554,8 @@
     if (awaitingStart || !tilesInitialized || !tiles) return;
     const tile = tiles[row][col];
 
-    // If stepping on a flagged tile, we treat it as a reveal attempt:
-    // the flag is removed, then the tile is revealed if safe.
-    if (tile.isFlagged) {
-      tile.isFlagged = false;
-      flagsPlaced = Math.max(0, flagsPlaced - 1);
-    }
+    // Flagged tiles are never revealed by walking onto them (unflag only in flag mode).
+    if (tile.isFlagged) return;
 
     if (tile.isRevealed) return;
 
@@ -599,6 +611,9 @@
   async function submitEndRun(result) {
     if (hasSubmittedEnd) return;
     hasSubmittedEnd = true;
+
+    // If the player hasn't provided a name, skip persistence for now.
+    if (!playerName || typeof playerName !== 'string' || playerName.trim() === '') return;
 
     const payload = {
       playerName,
@@ -688,6 +703,12 @@
         throw new Error(data && data.message ? data.message : 'Failed to save score.');
       }
 
+      try {
+        if (window.localStorage) window.localStorage.setItem(LS_PLAYER_NAME_KEY, String(winName).trim());
+      } catch {
+        // ignore
+      }
+
       winSubmitMsg.textContent = 'Score saved! Redirecting to leaderboard...';
       winSubmitMsg.classList.remove('alert--hidden');
       window.setTimeout(() => {
@@ -735,6 +756,42 @@
       .catch(() => {
         // eslint-disable-next-line no-console
         console.warn('Failed to refresh leaderboard');
+      });
+  }
+
+  function refreshMyWins() {
+    const listEl = document.getElementById('sideMyWinsList');
+    if (!listEl) return;
+    if (!playerName) {
+      listEl.innerHTML = `<div class="muted">Enter your name on a win to track your times.</div>`;
+      return;
+    }
+
+    fetch(`/api/scores?playerName=${encodeURIComponent(playerName)}&limit=8`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const wins = data && data.wins ? data.wins : [];
+        if (!wins.length) {
+          listEl.innerHTML = `<div class="muted">No wins yet for <strong>${escapeHtml(playerName)}</strong>.</div>`;
+          return;
+        }
+
+        const rowsHtml = wins
+          .map((w) => {
+            const time = w.completionTimeMs ? formatTime(w.completionTimeMs) : '--:--';
+            const date = w.datePlayed ? new Date(w.datePlayed).toLocaleDateString() : '';
+            return `
+              <div class="leaderboard__row leaderboard__row--compact">
+                <div class="leaderboard__name">${escapeHtml(time)}</div>
+                <div class="leaderboard__time hud__value--mono">${escapeHtml(date)}</div>
+              </div>
+            `;
+          })
+          .join('');
+        listEl.innerHTML = rowsHtml;
+      })
+      .catch(() => {
+        listEl.innerHTML = `<div class="muted">Could not load your scores.</div>`;
       });
   }
 
@@ -807,7 +864,7 @@
         return;
       }
 
-      if (key === 'e' || key === 'E') {
+      if (key === 'f' || key === 'F') {
         e.preventDefault();
         if (awaitingStart) {
           setModeHint();
@@ -817,14 +874,12 @@
           if (!flagMode) {
             // Enter flag mode
             flagMode = true;
-            moveKeys.left = moveKeys.right = moveKeys.up = moveKeys.down = false;
             flagCursor = { row: cursor.row, col: cursor.col };
             setModeHint();
             renderBoard();
             updateFlagTargetVisual();
           } else {
-            // Confirm placement, then exit
-            toggleFlagHere();
+            // Exit flag mode
             flagMode = false;
             setModeHint();
             renderBoard();
@@ -852,74 +907,29 @@
         return;
       }
 
-      if (!flagMode) {
-        // Continuous free-roam movement keys
-        if (key === 'ArrowUp' || key === 'w' || key === 'W') {
-          e.preventDefault();
-          moveKeys.up = true;
-        } else if (key === 'ArrowDown' || key === 's' || key === 'S') {
-          e.preventDefault();
-          moveKeys.down = true;
-        } else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-          e.preventDefault();
-          moveKeys.left = true;
-        } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-          e.preventDefault();
-          moveKeys.right = true;
-        }
-        return;
-      }
-
-      // Flag mode controls
-      if (key === 'Escape') {
-        e.preventDefault();
-        flagMode = false;
-        setModeHint();
-        renderBoard();
-        updateFlagTargetVisual();
-        return;
-      }
-
-      if (key === 'Enter' || key === ' ') {
-        e.preventDefault();
-        if (awaitingStart) return;
-        // Enter confirms too, mirroring E confirm for accessibility
-        toggleFlagHere();
-        flagMode = false;
-        setModeHint();
-        renderBoard();
-        updateFlagTargetVisual();
-        return;
-      }
-
-      let dr = 0;
-      let dc = 0;
-
+      // Continuous free-roam movement keys (also used in flag mode).
       if (key === 'ArrowUp' || key === 'w' || key === 'W') {
-        dr = -1;
+        e.preventDefault();
+        moveKeys.up = true;
       } else if (key === 'ArrowDown' || key === 's' || key === 'S') {
-        dr = 1;
+        e.preventDefault();
+        moveKeys.down = true;
       } else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-        dc = -1;
+        e.preventDefault();
+        moveKeys.left = true;
       } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-        dc = 1;
-      } else {
-        return;
+        e.preventDefault();
+        moveKeys.right = true;
+      } else if (key === 'Escape' && flagMode) {
+        e.preventDefault();
+        flagMode = false;
+        setModeHint();
+        renderBoard();
+        updateFlagTargetVisual();
       }
-
-      e.preventDefault();
-
-      const nr = flagCursor.row + dr;
-      const nc = flagCursor.col + dc;
-      if (!isWithinBounds(nr, nc)) return;
-
-      flagCursor = { row: nr, col: nc };
-      renderBoard();
-      updateFlagTargetVisual();
     });
 
     window.addEventListener('keyup', (e) => {
-      if (flagMode) return; // in flag mode arrows control selection, not movement
       const key = e.key;
       if (key === 'ArrowUp' || key === 'w' || key === 'W') moveKeys.up = false;
       if (key === 'ArrowDown' || key === 's' || key === 'S') moveKeys.down = false;
@@ -935,6 +945,8 @@
       e.preventDefault();
       submitWinScore(winNameInput.value);
     });
+
+    // Clicking tiles in flag mode intentionally does nothing; flags are toggled by walking over tiles.
   }
 
   function initGame() {
@@ -983,6 +995,7 @@
     bindControls();
     updateHUD();
     refreshSidebarLeaderboard();
+    refreshMyWins();
 
     startAnimationLoop();
 
