@@ -325,7 +325,7 @@ body {
 
 .play {
   display: grid;
-  grid-template-columns: 230px 1fr;
+  grid-template-columns: 260px 1fr;
   gap: 16px;
   align-items: start;
 }
@@ -339,6 +339,35 @@ body {
   position: sticky;
   top: 72px;
   height: fit-content;
+}
+
+/* Left HUD vertical stack */
+.hudPanel__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hudPanel__stack .hud__item {
+  width: 100%;
+  min-width: 0;
+}
+
+.hudPanel__stack .hud__value {
+  font-size: 22px;
+}
+
+.hudPanel__restart {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* Ensure the board takes full available width next to the HUD */
+.play .game {
+  min-width: 0;
+}
+.play .game__boardWrap {
+  width: 100%;
 }
 
 .hud {

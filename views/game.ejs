@@ -12,7 +12,7 @@
     <main class="container game-layout">
       <div class="play">
         <aside class="hudPanel">
-          <div class="hud">
+          <div class="hudPanel__stack">
             <div class="hud__item">
               <div class="hud__label">Bombs</div>
               <div class="hud__value" id="bombCounter">0</div>
@@ -26,7 +26,7 @@
               <div class="hud__value hud__value--mono" id="timer">00:00</div>
             </div>
           </div>
-          <button class="btn btn--secondary" id="restartBtn" type="button" style="margin-top:10px">Restart</button>
+          <button class="btn btn--secondary hudPanel__restart" id="restartBtn" type="button">Restart</button>
         </aside>
 
         <section class="game">
