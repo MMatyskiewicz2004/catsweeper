@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> • Cat Sweeper</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <%- include('partials/header'); %>
+
+    <main class="container game-layout">
+      <section class="game">
+        <div class="game__hud">
+          <div class="hud hud--left">
+            <div class="hud__item">
+              <div class="hud__label">Bombs</div>
+              <div class="hud__value" id="bombCounter">0</div>
+            </div>
+            <div class="hud__item">
+              <div class="hud__label">Flags</div>
+              <div class="hud__value" id="flagCounter">0</div>
+            </div>
+          </div>
+
+          <div class="hud hud--center">
+            <div class="hud__item">
+              <div class="hud__label">Time</div>
+              <div class="hud__value hud__value--mono" id="timer">00:00</div>
+            </div>
+          </div>
+
+          <div class="hud hud--right">
+            <button class="btn btn--secondary" id="restartBtn" type="button">Restart</button>
+          </div>
+        </div>
+
+        <div class="game__boardWrap">
+          <div class="game__boardMeta">
+            <div class="muted" id="modeHint">
+              Walk with <span class="kbd">Arrows</span> or <span class="kbd">WASD</span> and choose your starting tile. Press <span class="kbd">Enter</span> when you are where you want to begin.
+              After the board spawns, press <span class="kbd">F</span> for Flag Mode to place/remove flags anywhere using <span class="kbd">Arrows</span> + <span class="kbd">Enter</span>.
+            </div>
+          </div>
+
+          <div id="board" class="board" aria-label="Minesweeper board"></div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="card">
+          <h2 class="card__title">Fastest Wins</h2>
+          <div id="sideLeaderboardList" class="leaderboard">
+            <% if (!fastestWins || fastestWins.length === 0) { %>
+              <div class="muted">No wins recorded yet.</div>
+            <% } else { %>
+              <% fastestWins.forEach((row, idx) => { %>
+                <div class="leaderboard__row leaderboard__row--compact">
+                  <div class="leaderboard__rank">#<%= idx + 1 %></div>
+                  <div class="leaderboard__name"><%= row.playerName %></div>
+                  <div class="leaderboard__time hud__value--mono">
+                    <%= row.completionTimeMs ? Math.round(row.completionTimeMs / 1000) : '-' %>s
+                  </div>
+                </div>
+              <% }) %>
+            <% } %>
+          </div>
+          <div class="side__linkRow">
+            <a class="link" href="/leaderboard">View full leaderboard</a>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Shared init payload -->
+    <script>
+      window.__PLAYER_NAME__ = <%- JSON.stringify(playerName) %>;
+      window.__GAME_META__ = <%- JSON.stringify(gameMeta) %>;
+    </script>
+    <script src="/js/gameClient.js" defer></script>
+
+    <!-- Overlays -->
+    <div id="deathOverlay" class="overlay overlay--hidden" role="dialog" aria-modal="true">
+      <div class="overlay__content">
+        <div class="overlay__title">You died. Try again.</div>
+        <div class="overlay__body muted" id="deathDetails"></div>
+        <div class="overlay__actions">
+          <button class="btn btn--primary" id="deathPlayAgainBtn" type="button">Play Again</button>
+          <a class="btn btn--secondary" href="/">Home</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="winOverlay" class="overlay overlay--hidden" role="dialog" aria-modal="true">
+      <div class="overlay__content overlay__content--win">
+        <div class="overlay__title">You cleared the board!</div>
+        <div class="overlay__body muted">
+          Completion time: <span class="hud__value hud__value--mono" id="winTime">00:00</span>
+        </div>
+
+        <form id="winForm" class="winForm" autocomplete="off">
+          <label class="form__label" for="winName">Player name</label>
+          <input class="form__input" id="winName" name="name" type="text" maxlength="20" required />
+          <div class="winForm__note muted">Only completed wins are stored in the leaderboard.</div>
+          <div class="overlay__actions">
+            <button class="btn btn--primary" id="winSubmitBtn" type="submit">Submit</button>
+            <button class="btn btn--secondary" id="winPlayAgainBtn" type="button">Play Again</button>
+          </div>
+          <div id="winSubmitMsg" class="alert alert--error alert--hidden" role="alert"></div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+

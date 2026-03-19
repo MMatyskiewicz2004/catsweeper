@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <%- include('partials/header'); %>
+
+    <main class="container">
+      <section class="section">
+        <div class="section__head">
+          <h1 class="section__title"><%= title %></h1>
+          <a class="link" href="/">Back to Home</a>
+        </div>
+
+        <div class="leaderboard leaderboard--page">
+          <% if (!fastestWins || fastestWins.length === 0) { %>
+            <div class="muted">No wins recorded yet.</div>
+          <% } else { %>
+            <% fastestWins.forEach((row, idx) => { %>
+              <div class="leaderboard__row leaderboard__row--headless">
+                <div class="leaderboard__rank">#<%= idx + 1 %></div>
+                <div class="leaderboard__name"><%= row.playerName %></div>
+                <div class="leaderboard__time">
+                  <%= row.completionTimeMs ? Math.round(row.completionTimeMs / 1000) : '-' %>s
+                </div>
+                <div class="leaderboard__date">
+                  <%= row.datePlayed ? new Date(row.datePlayed).toLocaleDateString() : '' %>
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </section>
+    </main>
+
+    <%- include('partials/footer'); %>
+  </body>
+</html>
+
